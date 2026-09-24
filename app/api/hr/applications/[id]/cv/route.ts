@@ -1,0 +1,4 @@
+import {NextResponse} from "next/server";
+import {requireHr} from "@/lib/auth";
+import {adminClient} from "@/lib/supabase";
+export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){const hr=await requireHr();if(!hr)return NextResponse.json({error:"Unauthorized"},{status:401});const {id}=await params;const db=adminClient();const {data:app,error}=await db.from("applications").select("cv_storage_path").eq("id",id).maybeSingle();if(error||!app?.cv_storage_path)return NextResponse.json({error:"CV tidak ditemukan"},{status:404});const signed=await db.storage.from("candidate-cvs").createSignedUrl(app.cv_storage_path,60);if(signed.error||!signed.data?.signedUrl)return NextResponse.json({error:"CV tidak dapat dibuka"},{status:500});return NextResponse.redirect(signed.data.signedUrl)}
